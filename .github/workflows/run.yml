@@ -22,19 +22,18 @@ jobs:
         run: |
           echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
           echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
-          cat /etc/resolv.conf
       
       - name: 设置Python环境
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
-          cache: "pip"
+          # 禁用自动依赖安装
+          cache-dependency-path: ""
       
       - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
           pip install requests
-          pip list
       
       - name: 执行脚本
         env:
@@ -44,8 +43,4 @@ jobs:
           PWD: ${{ secrets.PWD }}
           STEP: ${{ secrets.STEP }}
         run: |
-          if ! python3 main.py ${PMODE} ${PKEY} ${USER} ${PWD} ${STEP}; then
-            echo "脚本执行失败，尝试备用方案..."
-            # 这里可以添加备用执行方案
-            exit 1
-          fi
+          python3 main.py ${PMODE} ${PKEY} ${USER} ${PWD} ${STEP}
