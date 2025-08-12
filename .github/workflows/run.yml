@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ main ]
   schedule:
-    - cron: 55 7 * * *
+    - cron: "55 7 * * *"
   watch:
     types: started
 
@@ -16,18 +16,36 @@ jobs:
     if: github.event.repository.owner.id == github.event.sender.id
 
     steps:
-      - uses: actions/checkout@v2
-      - name: 初始化Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: 开始
+      - uses: actions/checkout@v3
+      
+      - name: 配置DNS
         run: |
+          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+          echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
+          cat /etc/resolv.conf
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+          cache: "pip"
+      
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
           pip install requests
-          pmode='${{ secrets.PMODE }}'
-          pkey='${{ secrets.PKEY }}'
-          user='${{ secrets.USER }}'
-          pwd='${{ secrets.PWD }}'
-          step='${{ secrets.STEP }}'
-
-          python3 main.py ${pmode} ${pkey} ${user} ${pwd} ${step}
+          pip list
+      
+      - name: 执行脚本
+        env:
+          PMODE: ${{ secrets.PMODE }}
+          PKEY: ${{ secrets.PKEY }}
+          USER: ${{ secrets.USER }}
+          PWD: ${{ secrets.PWD }}
+          STEP: ${{ secrets.STEP }}
+        run: |
+          if ! python3 main.py ${PMODE} ${PKEY} ${USER} ${PWD} ${STEP}; then
+            echo "脚本执行失败，尝试备用方案..."
+            # 这里可以添加备用执行方案
+            exit 1
+          fi
